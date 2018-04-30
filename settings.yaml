@@ -1,0 +1,9 @@
+client_config_backend: settings
+client_config:
+  client_id: <Enter Client ID Here>
+  client_secret: <Enter Client Secret Here>
+save_credentials: True
+save_credentials_backend: file
+save_credentials_file: credentials.json
+
+get_refresh_token: True
