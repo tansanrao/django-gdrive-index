@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from downloads.models import Directory, Files
@@ -40,14 +40,12 @@ def device(request, pk):
     return render(request, 'downloads/deviceindex.html', {'list': list, 'directory': codename})
 
 def authservice(request):
-    gauth.LocalWebserverAuth()
-    return HttpResponse("This is the oauth2 page")
+    auth_url=gauth.GetAuthUrl()
+    return HttpResponse(auth_url)
 
 def downloadprovider(request, pk):
     drive=GoogleDrive(gauth)
     fileobj = get_object_or_404(Files, pk=pk)
     download = drive.CreateFile({'id': str(fileobj.fileid)})
-    print('Downloading file %s from Google Drive' % fileobj.filename)
-    response = HttpResponse(FileWrapper(download.GetContentString()), content_type='application/zip')
-    response['Content-Disposition'] = 'attachment;'
-    return response
+    download.GetContentFile(str(fileobj.filename))
+    return FileResponse(open(str(fileobj.filename), 'rb'))
