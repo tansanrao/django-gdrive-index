@@ -48,4 +48,5 @@ def downloadprovider(request, pk):
     fileobj = get_object_or_404(Files, pk=pk)
     download = drive.CreateFile({'id': str(fileobj.fileid)})
     download.GetContentFile(str(fileobj.filename))
-    return FileResponse(open(str(fileobj.filename), 'rb'))
+    response = HttpResponse(open(str(fileobj.filename), 'rb'), content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="%s"' % str(fileobj.filename)
