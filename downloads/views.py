@@ -4,6 +4,7 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from downloads.models import Directory, Files
 import re
+from wsgiref.util import FileWrapper
 
 gauth=GoogleAuth()
 drive = None
@@ -31,12 +32,22 @@ def index(request):
     list = Directory.objects.all()
     return render(request, 'downloads/index.html', {'list': list})
 
-def device(request):
+def device(request, pk):
     UpdateDB()
-    list = get_object_or_404(Directory, pk=pk)
-    return render(request, 'home/device.html', {'list': list})
+    codename=Directory.objects.get(pk=pk)
+    list = Files.objects.filter(directory = codename)
+    print(codename)
+    return render(request, 'downloads/deviceindex.html', {'list': list, 'directory': codename})
 
 def authservice(request):
     gauth.LocalWebserverAuth()
     return HttpResponse("This is the oauth2 page")
 
+def downloadprovider(request, pk):
+    drive=GoogleDrive(gauth)
+    fileobj = get_object_or_404(Files, pk=pk)
+    download = drive.CreateFile({'id': str(fileobj.fileid)})
+    print('Downloading file %s from Google Drive' % fileobj.filename)
+    response = HttpResponse(FileWrapper(download.GetContentString()), content_type='application/zip')
+    response['Content-Disposition'] = 'attachment;'
+    return response
