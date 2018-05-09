@@ -1,9 +1,11 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse, JsonResponse
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from downloads.models import Directory, Files
 import re
+import io
+import json
 from wsgiref.util import FileWrapper
 
 gauth=GoogleAuth()
@@ -25,7 +27,10 @@ def UpdateDB():
         try:
             FilesStore = Files.objects.get(fileid=file['id'])
         except Files.DoesNotExist:
-            FileStore = Files.objects.create_file(Directory.objects.get(name=codename), file['id'], file['title'])
+            fetcher = drive.CreateFile({'id': file['id']})
+            fetcher.FetchMetadata()
+            download_url = fetcher.metadata.get('downloadUrl')
+            FileStore = Files.objects.create_file(Directory.objects.get(name=codename), file['id'], file['title'], download_url[:-8], file['fileSize'])
 
 def index(request):
     UpdateDB()
@@ -40,13 +45,31 @@ def device(request, pk):
     return render(request, 'downloads/deviceindex.html', {'list': list, 'directory': codename})
 
 def authservice(request):
+    ClearDB()
     auth_url=gauth.GetAuthUrl()
+    gauth.LocalWebserverAuth()
     return HttpResponse(auth_url)
 
-def downloadprovider(request, pk):
-    drive=GoogleDrive(gauth)
-    fileobj = get_object_or_404(Files, pk=pk)
-    download = drive.CreateFile({'id': str(fileobj.fileid)})
-    download.GetContentFile(str(fileobj.filename))
-    response = HttpResponse(open(str(fileobj.filename), 'rb'), content_type='application/zip')
-    response['Content-Disposition'] = 'attachment; filename="%s"' % str(fileobj.filename)
+def api(request):
+    UpdateDB()
+    directories = Directory.objects.all()
+    jsonobject = []
+    for dir in directories:
+        files = Files.objects.filter(directory = dir)
+        filelist = []
+        for file in files:
+            filelist.append({
+                'filename' : str(file.filename),
+                'size' : int(file.filesize),
+                'download_url': str(file.download_url),
+            })
+        
+        jsonobject.append({
+            'codename': str(dir.name),
+            'files': filelist,
+        })
+    return JsonResponse(jsonobject, safe=False)
+
+def ClearDB():
+    Files.objects.all().delete()
+    Directory.objects.all().delete()

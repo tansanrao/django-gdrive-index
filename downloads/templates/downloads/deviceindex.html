@@ -27,7 +27,7 @@
         <ul>
             {% for item in list %}
                 <li>
-                    <h1 class="post-title"><a href='{% url 'downloader' pk=item.pk %}'>{{ item.filename }}</a></h1>
+                    <h1 class="post-title"><a href='{{ item.download_url }}'>{{ item.filename }}</a></h1>
                 </li>
             {% endfor %}
             </header>
