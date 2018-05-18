@@ -14,7 +14,7 @@ codename_re = re.compile(r"OFFICIAL-\d{8}-(.*).zip")
 
 def UpdateDB():
     drive=GoogleDrive(gauth)
-    file_list = drive.ListFile({'q': "'1eX22TXEwCO9fcNsVuGSzcuG5C3yZbe0C' in parents"}).GetList()
+    file_list = drive.ListFile({'q': "'1UugE3Eb43arYnfn0muFvIkkDkbvj3NAr' in parents"}).GetList()
     for file in file_list:
         try:
             codename=codename_re.search(file['title']).group(1)
@@ -29,8 +29,8 @@ def UpdateDB():
         except Files.DoesNotExist:
             fetcher = drive.CreateFile({'id': file['id']})
             fetcher.FetchMetadata()
-            download_url = fetcher.metadata.get('downloadUrl')
-            FileStore = Files.objects.create_file(Directory.objects.get(name=codename), file['id'], file['title'], download_url[:-8], file['fileSize'])
+            download_url = str("https://drive.google.com/uc?export=download&id=" + str(file['id']))
+            FileStore = Files.objects.create_file(Directory.objects.get(name=codename), file['id'], file['title'], download_url, file['fileSize'])
 
 def index(request):
     UpdateDB()
